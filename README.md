@@ -1,4 +1,4 @@
-# RegressionwPython
+# RegressionwR
 
 Insurance Forecasting
 
