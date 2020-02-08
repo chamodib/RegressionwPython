@@ -1,4 +1,4 @@
-# RegressionwR
+# Regression with R
 
 Insurance Forecasting
 
