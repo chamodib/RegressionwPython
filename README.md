@@ -8,4 +8,6 @@ The data set consisted of 1338 data points, with one response variable (charges)
 
 To create an accurate predictive model, firstly some descriptive statistics were drawn to better understand the dataset. Secondly various variable selection methods such as forward, backward and stepwise regression along with LASSO regression was performed. Interaction terms were introduced and Box Cox variable transformation was used to transform the model to better fit the data. Finally cross validation was used to pick the best predictive model. R² adj and root mean square error were used as measures to select the best predictive model. 
 
+*The code I have posted was written in collaboration with the teammate. I do not take full credit for the work*
+
 
