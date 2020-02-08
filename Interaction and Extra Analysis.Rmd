@@ -1,0 +1,73 @@
+---
+title: "Extra Analysis"
+author: "Aren Zita"
+date: "20/11/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Variable Selection with all the Interaction Terms
+```{r}
+#clear the workspace
+rm(list=ls())
+```
+
+```{r}
+#import all the packages
+library(car)
+library(MASS)
+library(stats4)
+library(tidyverse)
+library(psych)
+```
+
+```{r}
+#import the table
+data.insurance = read.csv('insurance.csv', header = T, stringsAsFactors = T)
+
+mfit_null  = lm(charges~1, data=data.insurance)
+mfit_full  = lm(charges~age+sex+bmi+children+smoker+region+bmi*smoker+bmi*sex+bmi*children+bmi*smoker+bmi*region+smoker*age+smoker*sex+smoker*region+age*sex+age*children+age*region, data = data.insurance)
+
+summary(mfit_full)
+
+```
+
+```{r}
+# Stepwise Selection
+model1 = step(mfit_null, data=data.insurance, scope=list(upper=mfit_full), direction="both")
+
+```
+
+```{r}
+summary(model1)
+vif(model1)
+```
+
+There are correlation between regressors on smoker, region, smoker-bmi, and bmi-region. BMI might be a problem too.
+
+```{r}
+model2 = lm(charges~smoker+age+bmi+children+region+sex+smoker:bmi, data=data.insurance)
+vif(model2)
+```
+
+```{r}
+model3 = lm(charges~age+bmi+children+region+sex+smoker:bmi, data=data.insurance)
+model4 = lm(charges~smoker+age+bmi+children+region+sex, data=data.insurance)
+vif(model3)
+vif(model4)
+
+summary(model3)
+summary(model4)
+```
+
+The final model can be (charges~age+bmi+children+region+sex+smoker:bmi).
+
+## Extra Graphs for Checking Multicolinearity
+```{r}
+ggplot(data.insurance, aes(x=bmi, y=charges, color=smoker)) + geom_point() + 
+  geom_smooth(method="lm", aes(group=smoker))
+
+```

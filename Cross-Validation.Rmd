@@ -1,0 +1,74 @@
+---
+title: "Cross-Validation"
+author: "Aren Zita"
+date: "13/11/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#clear the workspace
+rm(list=ls())
+```
+
+```{r}
+#import packages
+library(tidyverse)
+library(caret)
+```
+
+```{r}
+#import the data
+data.insurance = read.csv('insurance.csv', header = T, stringsAsFactors = T)
+final.model = lm(charges ~ smoker + age + bmi + children + region, 
+                 data=data.insurance)
+
+```
+
+## k-fold cross validation
+The k-fold cross-validation method evaluates the model performance on different subset of the training data and then calculate the average prediction error rate.
+I used k=10 in here for evaluation.
+
+```{r}
+# Define training control
+set.seed(123) 
+train.control <- trainControl(method = "cv", number = 10)
+# Train the model
+#raw model after variable selection
+model1 <- train(charges ~smoker + age + bmi + children + region, 
+               data = data.insurance, method = "lm",
+               trControl = train.control)
+#model with log of charges
+model2 <- train(log(charges) ~smoker + age + bmi + children + region, 
+               data = data.insurance, method = "lm",
+               trControl = train.control)
+#model with charges^0.1414...
+model3 <- train(charges^0.1414141414 ~smoker + age + bmi + children + region, 
+               data = data.insurance, method = "lm",
+               trControl = train.control)
+model4 <- train(charges^0.262626~age+bmi+children+region+sex+smoker:bmi, 
+               data = data.insurance, method = "lm",
+               trControl = train.control)
+# Summarize the results
+#print(model1)
+#print(model2)
+print(model3)
+print(model4)
+
+test3 = lm(charges^0.141414~smoker + age + bmi + children + region, 
+               data = data.insurance)
+
+
+library(car)
+test4 = lm(charges^0.262626~age+bmi+children+region+sex+smoker:bmi, data=data.insurance)
+vif(test3)
+vif(test4)
+
+summary(test3)
+summary(test4)
+```
+
+The model with charges^0.1414... gave the lowest RMSE (root mean squared error).

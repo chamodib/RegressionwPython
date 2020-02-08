@@ -1,0 +1,90 @@
+---
+title: "Regression Tree Analysis"
+author: "Aren Zita"
+date: "11/11/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list=ls())
+```
+
+```{r}
+#import packages
+suppressMessages(library(car))
+library(MASS)
+library(stats4)
+suppressMessages(library(tidyverse))
+suppressMessages(library(psych))
+suppressMessages(library(tree))
+library(rpart)
+library(rpart.plot)
+library(TeachingDemos)
+```
+
+Regression tree analysis can find an optimal classification structure of the model and visualizing it. It is often natural and understandable compared to linear model, however, it is not as accurate for making predictions.
+
+## Tree Pruning
+Pruning the regression tree will avoid the risk of overfitting the model by minimizing the split of the tree since the decrease of the residual sum of squared is insignificant.
+
+```{r}
+data.insurance = read.csv('insurance.csv', header = T, stringsAsFactors = T)
+final.model = lm(charges ~ smoker + age + bmi + children + region, data=data.insurance)
+
+insurance.tree <- rpart(data = data.insurance, 
+                      final.model,
+                      method = "anova")
+
+prp(insurance.tree, type=1, extra=1, 
+    main="Original full tree")
+
+plotcp(insurance.tree)
+
+insurance.prune <- prune(insurance.tree, cp=0.025)
+
+prp(insurance.prune, type=1, extra=1, 
+    main="Final pruned tree")
+
+```
+
+The 'Final Pruned Tree' shows that the most influential variable is whether a person is smokring or not when predicting the insurance charges. 
+* If the person is smoking, the bmi is influential next.
+* If the person is not smoking, the age is inflential next.
+
+The number under each terminal node gives the sample size and the prediction of the charges (mean charges).
+
+```{r}
+with(data.insurance, mean(charges[smoker=='no'&age<43])) #First terminal node
+with(data.insurance, mean(charges[smoker=='no'&age>=43])) #Second terminal node
+with(data.insurance, mean(charges[smoker=='yes'&bmi<30])) #Third terminal node
+with(data.insurance, mean(charges[smoker=='yes'&bmi>=30])) #Fourth terminal node
+
+```
+
+We can interpret the model that the insurance charge significantly increases if the person is smoking and the BMI is more than or equal to 30 which indicates that the person is obese. Conversely, the insurance charge is low if the person is not smoking and younger than 43 years old.
+
+```{r}
+data.insurance = read.csv('insurance.csv', header = T, stringsAsFactors = T)
+final.model = lm(charges^0.141414 ~ smoker + age + bmi + children + region, data=data.insurance)
+
+insurance.tree <- rpart(data = data.insurance, 
+                      final.model,
+                      method = "anova")
+
+prp(insurance.tree, type=1, extra=1, 
+    main="Original full tree")
+
+plotcp(insurance.tree)
+printcp(insurance.tree)
+
+insurance.prune <- prune(insurance.tree, cp=0.017)
+
+prp(insurance.prune, type=1, extra=1, 
+    main="Final pruned tree")
+
+```
+

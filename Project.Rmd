@@ -1,0 +1,139 @@
+---
+title: "STAT 350 Project"
+author: "Aren Zita"
+date: "07/11/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Variable Selection
+```{r}
+#clear the workspace
+rm(list=ls())
+
+#import all the packages
+library(car)
+library(MASS)
+library(stats4)
+library(tidyverse)
+library(psych)
+```
+
+```{r}
+#import the table
+data.insurance = read.csv('insurance.csv', header = T, stringsAsFactors = T)
+
+mfit_null  = lm(charges~1, data=data.insurance)
+mfit_full  = lm(charges~age+sex+bmi+children+smoker+region, data = data.insurance)
+
+summary(mfit_full)
+
+```
+
+```{r}
+# Forward Selection
+step(mfit_null, data=data.insurance, scope=list(lower=mfit_null, upper=mfit_full), direction="forward")
+
+```
+
+```{r}
+# Backward Selection
+step(mfit_full, data=data.insurance, direction="backward")
+
+```
+
+```{r}
+# Stepwise Selection
+model1 = step(mfit_null, data=data.insurance, scope=list(upper=mfit_full), direction="both")
+
+```
+
+The final model includes all the variables except sex.
+
+```{r}
+summary(mfit_full)
+summary(model1)
+model2 = lm(charges~age+bmi+children+smoker, data=data.insurance)
+summary(model2)
+```
+
+The full model's adjusted R-squared is 0.7494 and the final model's adjusted R-squared is 0.7496. There is not much difference so we can say that the variable sex is not significant in our model.
+
+## Model Adequacy Checking and Transformations
+#Multicolinearity and Linearity
+```{r}
+cor(data.insurance[,c(1,3,4,7)])
+vif(model1)
+
+library(psych)
+pairs.panels(data.insurance[c("age", "bmi", "children", "charges")])
+ggplot(data.insurance, aes(x=age, y=charges)) + geom_point() + geom_smooth()
+ggplot(data.insurance, aes(x=charges)) + geom_histogram()
+
+```
+
+All the VIF is less than 3. There is no multicolinearity.
+The Charges vs Age might not be linear. Transformation might be required.
+
+# Transformation
+```{r}
+ggplot(data.insurance, aes(x=age^2, y=charges)) + geom_point() + geom_smooth()
+ggplot(data.insurance, aes(x=log(charges))) + geom_histogram()
+model3 = lm(charges~smoker + age + age^2 + bmi + children + region, data=data.insurance)
+model4 = lm(log(charges)~smoker + age + bmi + children + region, data=data.insurance)
+model5 = lm(log(charges)~smoker + age + age^2 + bmi + children + region, data=data.insurance)
+summary(model3)
+summary(model4)
+summary(model5)
+```
+
+We can either log the y value, charges, to fix the skewed frequency distribution (model3) or add squared age value to linearize the relation (model4).
+Model3 gives $Adj\;R^2 = 0.7496$. Model4 gives $Adj\;R^2 = 0.765$.
+
+#Extra Graphs
+```{r}
+ggplot(data.insurance, aes(x=bmi, y=charges, color=smoker)) + geom_point()
+
+ggplot(data.insurance, aes(x=as.factor(children), y=charges)) + geom_boxplot() + geom_point()
+
+ggplot(data.insurance, aes(x=smoker, y=charges)) + geom_boxplot()
+
+ggplot(data.insurance, aes(x=region, y=charges)) + geom_boxplot()
+
+```
+
+## Decision Tree
+
+```{r}
+library(tree)
+## Build the full tree
+library(rpart)
+insurance.tree <- rpart(data = data.insurance, 
+                      model1,
+                      method = "anova")
+library(rpart.plot)
+prp(insurance.tree, type=1, extra=1, 
+    main="Original full tree")
+
+plotcp(insurance.tree)
+
+insurance.prune <- prune(insurance.tree, cp=0.025)
+
+prp(insurance.prune, type=1, extra=1, 
+    main="Final pruned tree")
+```
+
+# Partition
+```{r}
+library(TeachingDemos)
+tree.demo(x=data.insurance[data.insurance$smoker=='yes',1],
+          y=data.insurance[data.insurance$smoker=='yes',7])
+tree.demo(x=data.insurance[data.insurance$smoker=='no',3],
+          y=data.insurance[data.insurance$smoker=='no',7])
+tree.demo(x=data.insurance$bmi,
+          y=data.insurance$charges)
+
+```
